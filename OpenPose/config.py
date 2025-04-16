@@ -1,4 +1,3 @@
-import numpy as np
 import cv2
 
 # Keypoint indices based on COCO-17 format (used by default in rtmlib Body)
@@ -37,7 +36,7 @@ KEYPOINT_CONFIDENCE_THRESHOLD = 0.3 # Minimum score to consider a keypoint valid
 
 # --- Visualization ---
 SKELETON_COLOR = (0, 255, 0) # Green skeleton
-SKELETON_THICKNESS = 2
+SKELETON_THICKNESS = 3
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 2.0 # <<< Increased font size significantly (adjust if needed)
 FONT_COLOR = (64, 224, 208) # Turqoise color in BGR format

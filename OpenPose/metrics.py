@@ -1,4 +1,3 @@
-import numpy as np
 import config
 from utils import calculate_angle, is_valid_keypoint
 
@@ -44,7 +43,7 @@ def analyze_squat(keypoints, scores):
 
     # --- Calculate Knee Angle ---
     knee_angle = calculate_angle(right_hip, right_knee, right_ankle)
-    metrics['knee_angle'] = knee_angle if knee_angle is not None else "N/A"
+    metrics['knee_angle'] = round(knee_angle, 2) if knee_angle is not None else "N/A"
 
     # --- Calculate Squat Depth ---
     depth_feedback = "N/A"

@@ -1,10 +1,8 @@
 import cv2
-import numpy as np
 import time
-import pandas as pd
 from rtmlib import Body, draw_skeleton # Make sure rtmlib is in the same directory or Python path
 import config
-from metrics import analyze_squat # Import your analysis function
+from metrics import analyze_squat # Import analysis function
 
 class VideoProcessor:
     def __init__(self, device='cpu', backend='onnxruntime', mode='balanced'):
@@ -48,9 +46,15 @@ class VideoProcessor:
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             print(f"Error: Could not open video file: {video_path}")
-            return None, None
+            return None, None, 0 # Return 0 fps on error
+        
+        # <<< Get video FPS >>>
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps == 0: # Handle case where FPS might not be readable
+            print("Warning: Could not read video FPS. Defaulting GIF duration.")
+            fps = 10 # Default to 10 FPS if unknown
 
-        processed_frames = []
+        processed_frames_rgb = [] # Store frames in RGB format
         all_frame_metrics = []
         frame_idx = 0
 
@@ -68,7 +72,7 @@ class VideoProcessor:
             except Exception as e:
                 print(f"Error during pose model inference on frame {frame_idx}: {e}")
                 # Optionally add a placeholder frame or skip
-                processed_frames.append(frame) # Add original frame on error
+                # processed_frames_rgb.append(frame) # Add original frame on error
                 all_frame_metrics.append({'frame': frame_idx, 'feedback': 'Inference Error'})
                 frame_idx += 1
                 continue # Skip analysis for this frame
@@ -94,9 +98,10 @@ class VideoProcessor:
                                          line_width=config.SKELETON_THICKNESS) # Use thickness from config
 
                 # --- Add metric text with background ---
+                exercise_text = f"Exercise: Squat"
                 angle_text = f"Knee Angle: {frame_metrics.get('knee_angle', 'N/A')}"
                 depth_text = f"Depth: {frame_metrics.get('squat_depth_feedback', 'N/A')}"
-                texts_to_draw = [angle_text, depth_text] # Add more metrics here as needed
+                texts_to_draw = [exercise_text, angle_text, depth_text] # Add more metrics here as needed
 
                 # Define text thickness (make it slightly bolder for larger font)
                 text_thickness = 3
@@ -135,15 +140,18 @@ class VideoProcessor:
                            (config.TEXT_POSITION_OFFSET[0], config.TEXT_POSITION_OFFSET[1]),
                            config.FONT, config.FONT_SCALE, (0, 0, 255), 1, cv2.LINE_AA)
 
-
+            # Processing time for frame
             processing_time = time.time() - start_time
             frame_metrics['processing_time'] = processing_time
+
             # print(f"Frame {frame_idx}: {processing_time:.4f}s, Metrics: {frame_metrics}") # Debug print
 
-            processed_frames.append(img_show)
+            # <<< Convert final frame to RGB and append >>>
+            processed_frames_rgb.append(cv2.cvtColor(img_show, cv2.COLOR_BGR2RGB))
             all_frame_metrics.append(frame_metrics)
             frame_idx += 1
 
         cap.release()
-        print(f"Video processing complete. Processed {frame_idx} frames.")
-        return processed_frames, all_frame_metrics
+        print(f"Video processing complete. Processed {frame_idx} frames. Original FPS: {fps:.2f}")
+        # <<< Return frames in RGB and FPS >>>
+        return processed_frames_rgb, all_frame_metrics, fps
